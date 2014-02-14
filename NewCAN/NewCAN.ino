@@ -12,6 +12,20 @@
 // CAN frame max data length
 #define MAX_CAN_FRAME_DATA_LEN   8
 
+// ADC 
+#define BIT_CONVERSION_CONSTANT (3.3/4095)
+
+float CHANNEL_0_REG = 0;
+float CHANNEL_1_REG = 0;
+float CHANNEL_2_REG = 0;
+float CHANNEL_3_REG = 0;
+float CHANNEL_4_REG = 0;
+float CHANNEL_5_REG = 0;
+float CHANNEL_6_REG = 0;
+float CHANNEL_7_REG = 0;
+float CHANNEL_8_REG = 0;
+float CHANNEL_9_REG = 0;
+
 uint32_t sentFrames, receivedFrames;
 
 //Leave this defined if you use the native port or comment it out if you use the programming port
@@ -20,6 +34,57 @@ uint32_t sentFrames, receivedFrames;
 CAN_FRAME frame1, frame2, incoming;
 
 CAN_FRAME frame_n_actual, frame_torque_cmd;
+
+void adc_setup(void)
+{
+  adc_init(ADC, SystemCoreClock, ADC_FREQ_MAX, 8);
+  adc_configure_timing(ADC, 0, ADC_SETTLING_TIME_3, 1);
+  adc_set_resolution(ADC, ADC_12_BITS);
+  
+  // Enable ADC channels arrange by arduino pins from A0 to A9
+  adc_enable_channel(ADC, ADC_CHANNEL_7);
+  adc_enable_channel(ADC, ADC_CHANNEL_6);
+  adc_enable_channel(ADC, ADC_CHANNEL_5);
+  adc_enable_channel(ADC, ADC_CHANNEL_4);
+  adc_enable_channel(ADC, ADC_CHANNEL_3);
+  adc_enable_channel(ADC, ADC_CHANNEL_2);
+  adc_enable_channel(ADC, ADC_CHANNEL_1);
+  adc_enable_channel(ADC, ADC_CHANNEL_0);
+  adc_enable_channel(ADC, ADC_CHANNEL_10);
+  adc_enable_channel(ADC, ADC_CHANNEL_11);
+  
+  // Enable ADC interrupt
+  adc_enable_interrupt(ADC, ADC_IER_EOC7); //EOC9 so that interrupt triggered when analogue input channerl 9 has reached end of conversion
+  
+  // Trigger configuration
+  adc_configure_trigger(ADC, ADC_TRIG_SW, 0);
+  
+  // Enable ADC interrupt
+  NVIC_EnableIRQ(ADC_IRQn);
+  
+  //start ADC conversion, note that ADC conversion has to be restarted once conversion is finished
+  adc_start(ADC);
+}
+
+void ADC_Handler(void)
+{
+  // Check the ADC conversion status
+  if ((adc_get_status(ADC) & ADC_ISR_EOC7) == ADC_ISR_EOC7)
+  {
+     //Get digital data value from ADC channels and can be used by application
+     CHANNEL_0_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_0))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_1_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_1))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_2_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_2))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_3_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_3))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_4_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_4))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_5_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_5))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_6_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_6))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_7_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_7))*BIT_CONVERSION_CONSTANT;
+     CHANNEL_8_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_10))*BIT_CONVERSION_CONSTANT; //notice that its channel 10
+     CHANNEL_9_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_11))*BIT_CONVERSION_CONSTANT; //notice that its channel 11
+  }     
+  adc_start(ADC);
+}
 
 void printFrame(CAN_FRAME &frame) {
 	Serial.print("ID: 0x");
@@ -104,14 +169,13 @@ bool has_received_data(uint8_t data_address) {
 }
 */
 
-uint16_t pedal_reading() {
-	return map(analogRead(A0), 40, 280, 0, 16380);
-}
-
 void setup() {
 
 	// start serial port at 115200 bps:
 	Serial.begin(115200);
+
+	// adc setup
+	adc_setup();
 
 	// Verify CAN0 and CAN1 initialization, baudrate set by CAN_BAUD_RATE:
 	if (CAN.init(CAN_BAUD_RATE) &&
@@ -204,7 +268,9 @@ void loop()
 
 	while (1) {
 		
-		uint16_t reading = pedal_reading();
+		// retrieves pedal input
+		float reading = CHANNEL_0_REG;
+		
 		test_frame_3.data.bytes[1] = reading & 0xff;
 		test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
 		Serial.print(test_frame_3.data.bytes[1], HEX);
