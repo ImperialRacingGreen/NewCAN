@@ -271,8 +271,8 @@ void loop()
 		// retrieves pedal input
 		float reading = CHANNEL_0_REG;
 		
-		test_frame_3.data.bytes[1] = reading & 0xff;
-		test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
+		//test_frame_3.data.bytes[1] = reading & 0xff;
+		//test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
 		Serial.print(test_frame_3.data.bytes[1], HEX);
 		Serial.print(" ");
 		Serial.print(test_frame_3.data.bytes[2], HEX);
