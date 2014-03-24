@@ -2,7 +2,7 @@
 #include "variant.h"
 #include <due_can.h>
 
-#define CAN_BAUD_RATE CAN_BPS_250K
+#define CAN_BAUD_RATE CAN_BPS_500K
 #define NDRIVE_RXID   0x210
 #define NDRIVE_TXID	  0x180
 
@@ -14,6 +14,10 @@
 
 // ADC 
 #define BIT_CONVERSION_CONSTANT (3.3/4095)
+
+// Pedal
+#define PEDAL1_REG CHANNEL_7_REG // A0
+#define PEDAL2_REG CHANNEL_6_REG // A1
 
 float CHANNEL_0_REG = 0;
 float CHANNEL_1_REG = 0;
@@ -42,16 +46,16 @@ void adc_setup(void)
   adc_set_resolution(ADC, ADC_12_BITS);
   
   // Enable ADC channels arrange by arduino pins from A0 to A9
-  adc_enable_channel(ADC, ADC_CHANNEL_7);
-  adc_enable_channel(ADC, ADC_CHANNEL_6);
-  adc_enable_channel(ADC, ADC_CHANNEL_5);
-  adc_enable_channel(ADC, ADC_CHANNEL_4);
-  adc_enable_channel(ADC, ADC_CHANNEL_3);
-  adc_enable_channel(ADC, ADC_CHANNEL_2);
-  adc_enable_channel(ADC, ADC_CHANNEL_1);
-  adc_enable_channel(ADC, ADC_CHANNEL_0);
-  adc_enable_channel(ADC, ADC_CHANNEL_10);
-  adc_enable_channel(ADC, ADC_CHANNEL_11);
+  adc_enable_channel(ADC, ADC_CHANNEL_7); // A0
+  adc_enable_channel(ADC, ADC_CHANNEL_6); // A1
+  adc_enable_channel(ADC, ADC_CHANNEL_5); // A2
+  adc_enable_channel(ADC, ADC_CHANNEL_4); // A3
+  adc_enable_channel(ADC, ADC_CHANNEL_3); // A4
+  adc_enable_channel(ADC, ADC_CHANNEL_2); // A5
+  adc_enable_channel(ADC, ADC_CHANNEL_1); // A6
+  adc_enable_channel(ADC, ADC_CHANNEL_0); // A7
+  adc_enable_channel(ADC, ADC_CHANNEL_10); // A8
+  adc_enable_channel(ADC, ADC_CHANNEL_11); // A9
   
   // Enable ADC interrupt
   adc_enable_interrupt(ADC, ADC_IER_EOC7); //EOC9 so that interrupt triggered when analogue input channerl 9 has reached end of conversion
@@ -234,6 +238,20 @@ static void test_1(void)
 	}
 }
 
+CAN_FRAME create_throttle_frame(float value)
+{
+	CAN_FRAME frame;
+
+	frame.id = NDRIVE_RXID;
+	frame.length = 3;
+	frame.data.bytes[0] = 0x3d;
+	frame.data.bytes[1] = ;
+	frame.data.bytes[2] = ;
+	frame.extended = 0;
+
+	return frame;
+}
+
 // can_example application entry point
 void loop()
 {
@@ -264,18 +282,19 @@ void loop()
 	//delayMicroseconds(100);
 	//CAN.sendFrame(test_frame_2);
 	//delayMicroseconds(100);
-	uint8_t counter = 0;
 
 	while (1) {
 		
 		// retrieves pedal input
-		float reading = CHANNEL_0_REG;
+		float reading = PEDAL1_REG;
 		
 		//test_frame_3.data.bytes[1] = reading & 0xff;
 		//test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
 		Serial.print(test_frame_3.data.bytes[1], HEX);
 		Serial.print(" ");
 		Serial.print(test_frame_3.data.bytes[2], HEX);
+		Serial.print(" ");
+		Serial.print(PEDAL2_REG, HEX);
 		Serial.print(" ");
 		Serial.println(reading, HEX);
 
