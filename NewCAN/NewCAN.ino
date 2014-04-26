@@ -13,7 +13,7 @@
 #define MAX_CAN_FRAME_DATA_LEN   8
 
 // ADC 
-#define BIT_CONVERSION_CONSTANT (3.3/4095)
+#define BIT_CONVERSION_CONSTANT (65536/4095.0)
 
 // Pedal
 #define PEDAL1_REG CHANNEL_7_REG // A0
@@ -287,17 +287,20 @@ void loop()
 		
 		// retrieves pedal input
 		float reading = PEDAL1_REG;
-		
+
+                Serial.println(reading);		
+
 		//test_frame_3.data.bytes[1] = reading & 0xff;
 		//test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
+/*
 		Serial.print(test_frame_3.data.bytes[1], HEX);
 		Serial.print(" ");
 		Serial.print(test_frame_3.data.bytes[2], HEX);
 		Serial.print(" ");
 		Serial.print(PEDAL2_REG, HEX);
 		Serial.print(" ");
-		Serial.println(reading, HEX);
-
+		Serial.println();
+*/
 		printFrame(test_frame_3);
 		delayMicroseconds(100);
 		CAN.sendFrame(test_frame_3);
