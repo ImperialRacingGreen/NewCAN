@@ -286,22 +286,29 @@ void loop()
     while (1) {
         
         // retrieves pedal input
-        float reading = PEDAL1_REG;
+        int reading_1 = PEDAL1_REG;
+        int reading_2 = PEDAL2_REG;
+        int difference = reading_1 - reading_2;
 
-                                Serial.println(reading);        
+        Serial.print("Reading 1: ");
+        Serial.println(reading_1);
+        Serial.print("Reading 2: ");
+        Serial.println(reading_2);
+        Serial.print("Difference: ");
+        Serial.println(difference);
 
         //test_frame_3.data.bytes[1] = reading & 0xff;
         //test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
-/*
-        Serial.print(test_frame_3.data.bytes[1], HEX);
-        Serial.print(" ");
-        Serial.print(test_frame_3.data.bytes[2], HEX);
-        Serial.print(" ");
-        Serial.print(PEDAL2_REG, HEX);
-        Serial.print(" ");
-        Serial.println();
-*/
-        printFrame(test_frame_3);
+
+        // Serial.print(test_frame_3.data.bytes[1], HEX);
+        // Serial.print(" ");
+        // Serial.print(test_frame_3.data.bytes[2], HEX);
+        // Serial.print(" ");
+        // Serial.print(PEDAL2_REG, HEX);
+        // Serial.print(" ");
+        // Serial.println();
+
+        // printFrame(test_frame_3);
         delayMicroseconds(100);
         CAN.sendFrame(test_frame_3);
         delayMicroseconds(100);
