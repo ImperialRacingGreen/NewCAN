@@ -1,6 +1,6 @@
 // Required libraries
 #include "variant.h"
-#include <due_can.h>
+#include "due_can.h"
 
 #define CAN_BAUD_RATE CAN_BPS_500K
 #define NDRIVE_RXID   0x210
@@ -245,8 +245,8 @@ CAN_FRAME create_throttle_frame(float value)
 	frame.id = NDRIVE_RXID;
 	frame.length = 3;
 	frame.data.bytes[0] = 0x3d;
-	frame.data.bytes[1] = ;
-	frame.data.bytes[2] = ;
+	frame.data.bytes[1] = 0;
+	frame.data.bytes[2] = 0;
 	frame.extended = 0;
 
 	return frame;
