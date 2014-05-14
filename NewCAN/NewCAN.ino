@@ -194,6 +194,14 @@ bool has_received_data(uint8_t data_address) {
 /**
  * Pedal reading functions
  */
+
+/**
+ * Processes pedal reading. Maps value to 16-bit range.
+ * @param  raw_value Raw value
+ * @param  min_value Minimum value
+ * @param  max_value Maximum value
+ * @return value     Processed value
+ */
 int get_pedal_reading(int raw_value, int min_value, int max_value)
 {
     // Map to 16-bit range
