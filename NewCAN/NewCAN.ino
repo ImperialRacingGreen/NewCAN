@@ -5,7 +5,8 @@
  * Debugging flags
  */
 #define SerialDebug Serial // Select Serial port for printing out debug messages
-#define DEBUG_PEDAL // Enable debugging of pedal readings
+// #define DEBUG_PEDAL // Display pedal readings
+#define DEBUG_PEDAL_AVERAGE // Display average pedal reading
 
 /**
  * Constants
@@ -33,7 +34,7 @@ const int pedal2_min = 700;  // pedal2 min value in 12-bit range
 const int pedal2_max = 1500; // pedal2 max value in 12-bit range
 
 // abs(pedal1 - pedal2) in 16-bit range must not go over this
-const int pedal_threshold = 4000;
+const int pedal_threshold = 10000;
 
 // Registers to store raw pedal readings during interrupt
 volatile int pedal1_raw = -1;
@@ -212,10 +213,12 @@ void emergency_stop()
 {
     // TODO send shutdown commands, functions, etc.
 
+    #ifdef SerialDebug
+    SerialDebug.println("Aborted!");
+    #endif
+
     while (true) {
-        #ifdef SerialDebug
-        SerialDebug.println("ABORT!");
-        #endif
+        // Infinite loop
     }
 }
 
@@ -267,7 +270,24 @@ int get_average_pedal_reading(const int reading_1, const int reading_2)
  */
 void assert_pedal_in_threshold(const int reading_1, const int reading_2, const int threshold)
 {
-    assert_or_abort(abs(reading_1 - reading_2) < threshold);
+    int difference = abs(reading_1 - reading_2);
+    bool condition = difference < threshold;
+
+    #ifdef SerialDebug
+    if ( ! condition) {
+        SerialDebug.println("Pedal reading discrepancy detected!");
+        SerialDebug.print("Reading (1): ");
+        SerialDebug.println(reading_1);
+        SerialDebug.print("Reading (2): ");
+        SerialDebug.println(reading_2);
+        SerialDebug.print("Threshold: ");
+        SerialDebug.println(threshold);
+        SerialDebug.print("Difference: ");
+        SerialDebug.println(difference);
+    }
+    #endif
+
+    assert_or_abort(condition);
 }
 
 void setup() {
@@ -400,7 +420,9 @@ void loop()
 
         SerialDebug.print("Difference (1-2): ");
         SerialDebug.println(abs(reading_1 - reading_2));
+        #endif
 
+        #ifdef DEBUG_PEDAL_AVERAGE
         SerialDebug.print("Average (1,2): ");
         SerialDebug.println(average_reading);
         #endif
