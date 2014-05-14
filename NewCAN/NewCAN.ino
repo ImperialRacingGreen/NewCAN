@@ -191,6 +191,18 @@ bool has_received_data(uint8_t data_address) {
 }
 */
 
+/**
+ * Pedal reading functions
+ */
+int get_pedal_reading(int raw_value, int min_value, int max_value)
+{
+    // Constraint raw value to min and max calibrations
+    raw_value = constrain(raw_value, min_value, max_value);
+
+    // Map to 16-bit range
+    return map(PEDAL1_REG, pedal1_min, pedal1_max, 0, 65536);
+}
+
 void setup() {
 
     // start serial port at 115200 bps:
@@ -303,24 +315,22 @@ void loop()
 
     while (1) {        
         // retrieves pedal input
-        int reading_1 = constrain(map(PEDAL1_REG, pedal1_min, pedal1_max, 0, 65536), 0, 65536);
-        int reading_2 = constrain(map(PEDAL2_REG, pedal2_min, pedal2_max, 0, 65536), 0, 65536);
+        int reading_1 = get_pedal_reading(PEDAL1_REG, pedal1_min, pedal1_max);
+        int reading_2 = get_pedal_reading(PEDAL2_REG, pedal2_min, pedal2_max);
         int difference = reading_1 - reading_2;
 
         #ifdef DEBUG_PEDAL
-        SerialDebug.println("Pedal 1:");
-        SerialDebug.print("Raw value: ");
+        SerialDebug.print("Raw value (1): ");
         SerialDebug.println(PEDAL1_REG);
-        SerialDebug.print("Computed value: ");
-        SerialDebug.println(reading_1);
-
-        SerialDebug.println("Pedal 2:");
-        SerialDebug.print("Raw value: ");
+        SerialDebug.print("Raw value (2): ");
         SerialDebug.println(PEDAL2_REG);
-        SerialDebug.print("Computed value: ");
+
+        SerialDebug.print("Computed value (1): ");
+        SerialDebug.println(reading_1);
+        SerialDebug.print("Computed value (2): ");
         SerialDebug.println(reading_2);
 
-        SerialDebug.print("Difference: ");
+        SerialDebug.print("Difference (1-2): ");
         SerialDebug.println(difference);
         #endif
 
