@@ -21,9 +21,9 @@
 // CAN frame max data length
 #define MAX_CAN_FRAME_DATA_LEN     8
 
-// Pedal
-#define PEDAL1_REG CHANNEL_7_REG // A0
-#define PEDAL2_REG CHANNEL_6_REG // A1
+// Pedal channels
+#define PEDAL1_ADC_CHANNEL ADC_CHANNEL_7 // A0
+#define PEDAL2_ADC_CHANNEL ADC_CHANNEL_6 // A1
 
 /**
  * Calibrated values
@@ -33,16 +33,19 @@ const int pedal1_max = 1000;
 const int pedal2_min = 700;
 const int pedal2_max = 1500;
 
-volatile int CHANNEL_0_REG = 0;
-volatile int CHANNEL_1_REG = 0;
-volatile int CHANNEL_2_REG = 0;
-volatile int CHANNEL_3_REG = 0;
-volatile int CHANNEL_4_REG = 0;
-volatile int CHANNEL_5_REG = 0;
-volatile int CHANNEL_6_REG = 0;
-volatile int CHANNEL_7_REG = 0;
-volatile int CHANNEL_8_REG = 0;
-volatile int CHANNEL_9_REG = 0;
+volatile int pedal1_raw = -1;
+volatile int pedal2_raw = -1;
+
+// volatile int CHANNEL_0_REG = 0;
+// volatile int CHANNEL_1_REG = 0;
+// volatile int CHANNEL_2_REG = 0;
+// volatile int CHANNEL_3_REG = 0;
+// volatile int CHANNEL_4_REG = 0;
+// volatile int CHANNEL_5_REG = 0;
+// volatile int CHANNEL_6_REG = 0;
+// volatile int CHANNEL_7_REG = 0;
+// volatile int CHANNEL_8_REG = 0;
+// volatile int CHANNEL_9_REG = 0;
 
 uint32_t sentFrames, receivedFrames;
 
@@ -58,19 +61,23 @@ void adc_setup(void)
     adc_init(ADC, SystemCoreClock, ADC_FREQ_MAX, 8);
     adc_configure_timing(ADC, 0, ADC_SETTLING_TIME_3, 1);
     adc_set_resolution(ADC, ADC_12_BITS);
-    
+
     // Enable ADC channels arrange by arduino pins from A0 to A9
-    adc_enable_channel(ADC, ADC_CHANNEL_7); // A0
-    adc_enable_channel(ADC, ADC_CHANNEL_6); // A1
-    adc_enable_channel(ADC, ADC_CHANNEL_5); // A2
-    adc_enable_channel(ADC, ADC_CHANNEL_4); // A3
-    adc_enable_channel(ADC, ADC_CHANNEL_3); // A4
-    adc_enable_channel(ADC, ADC_CHANNEL_2); // A5
-    adc_enable_channel(ADC, ADC_CHANNEL_1); // A6
-    adc_enable_channel(ADC, ADC_CHANNEL_0); // A7
-    adc_enable_channel(ADC, ADC_CHANNEL_10); // A8
-    adc_enable_channel(ADC, ADC_CHANNEL_11); // A9
-    
+    // adc_enable_channel(ADC, ADC_CHANNEL_7); // A0
+    // adc_enable_channel(ADC, ADC_CHANNEL_6); // A1
+    // adc_enable_channel(ADC, ADC_CHANNEL_5); // A2
+    // adc_enable_channel(ADC, ADC_CHANNEL_4); // A3
+    // adc_enable_channel(ADC, ADC_CHANNEL_3); // A4
+    // adc_enable_channel(ADC, ADC_CHANNEL_2); // A5
+    // adc_enable_channel(ADC, ADC_CHANNEL_1); // A6
+    // adc_enable_channel(ADC, ADC_CHANNEL_0); // A7
+    // adc_enable_channel(ADC, ADC_CHANNEL_10); // A8
+    // adc_enable_channel(ADC, ADC_CHANNEL_11); // A9
+
+    // Enable ADC channels for pedals
+    adc_enable_channel(ADC, PEDAL1_ADC_CHANNEL);
+    adc_enable_channel(ADC, PEDAL2_ADC_CHANNEL);
+
     // Enable ADC interrupt
     adc_enable_interrupt(ADC, ADC_IER_EOC7); //EOC9 so that interrupt triggered when analogue input channerl 9 has reached end of conversion
     
@@ -89,17 +96,20 @@ void ADC_Handler(void)
     // Check the ADC conversion status
     if ((adc_get_status(ADC) & ADC_ISR_EOC7) == ADC_ISR_EOC7)
     {
-        //Get digital data value from ADC channels and can be used by application
-        CHANNEL_0_REG = adc_get_channel_value(ADC, ADC_CHANNEL_0);
-        CHANNEL_1_REG = adc_get_channel_value(ADC, ADC_CHANNEL_1);
-        CHANNEL_2_REG = adc_get_channel_value(ADC, ADC_CHANNEL_2);
-        CHANNEL_3_REG = adc_get_channel_value(ADC, ADC_CHANNEL_3);
-        CHANNEL_4_REG = adc_get_channel_value(ADC, ADC_CHANNEL_4);
-        CHANNEL_5_REG = adc_get_channel_value(ADC, ADC_CHANNEL_5);
-        CHANNEL_6_REG = adc_get_channel_value(ADC, ADC_CHANNEL_6);
-        CHANNEL_7_REG = adc_get_channel_value(ADC, ADC_CHANNEL_7);
-        CHANNEL_8_REG = adc_get_channel_value(ADC, ADC_CHANNEL_10); //notice that its channel 10
-        CHANNEL_9_REG = adc_get_channel_value(ADC, ADC_CHANNEL_11); //notice that its channel 11
+        // // Get digital data value from ADC channels and can be used by application
+        // CHANNEL_0_REG = adc_get_channel_value(ADC, ADC_CHANNEL_0);
+        // CHANNEL_1_REG = adc_get_channel_value(ADC, ADC_CHANNEL_1);
+        // CHANNEL_2_REG = adc_get_channel_value(ADC, ADC_CHANNEL_2);
+        // CHANNEL_3_REG = adc_get_channel_value(ADC, ADC_CHANNEL_3);
+        // CHANNEL_4_REG = adc_get_channel_value(ADC, ADC_CHANNEL_4);
+        // CHANNEL_5_REG = adc_get_channel_value(ADC, ADC_CHANNEL_5);
+        // CHANNEL_6_REG = adc_get_channel_value(ADC, ADC_CHANNEL_6);
+        // CHANNEL_7_REG = adc_get_channel_value(ADC, ADC_CHANNEL_7);
+        // CHANNEL_8_REG = adc_get_channel_value(ADC, ADC_CHANNEL_10); //notice that its channel 10
+        // CHANNEL_9_REG = adc_get_channel_value(ADC, ADC_CHANNEL_11); //notice that its channel 11
+
+        pedal1_raw = adc_get_channel_value(ADC, PEDAL1_ADC_CHANNEL);
+        pedal2_raw = adc_get_channel_value(ADC, PEDAL2_ADC_CHANNEL);
     }
     adc_start(ADC);
 }
@@ -201,7 +211,7 @@ bool has_received_data(uint8_t data_address) {
 int get_pedal_reading(int raw_value, int min_value, int max_value)
 {
     // Map to 16-bit range
-    return constrain(map(PEDAL1_REG, pedal1_min, pedal1_max, 0, 65536), 0, 65536);
+    return constrain(map(raw_value, min_value, max_value, 0, 65536), 0, 65536);
 }
 
 void setup() {
@@ -316,15 +326,16 @@ void loop()
 
     while (1) {        
         // retrieves pedal input
-        int reading_1 = get_pedal_reading(PEDAL1_REG, pedal1_min, pedal1_max);
-        int reading_2 = get_pedal_reading(PEDAL2_REG, pedal2_min, pedal2_max);
+        int reading_1 = get_pedal_reading(pedal1_raw, pedal1_min, pedal1_max);
+        int reading_2 = get_pedal_reading(pedal2_raw, pedal2_min, pedal2_max);
         int difference = reading_1 - reading_2;
+        int average_reading = (reading_1 + reading_2) / 2;
 
         #ifdef DEBUG_PEDAL
         SerialDebug.print("Raw value (1): ");
-        SerialDebug.println(PEDAL1_REG);
+        SerialDebug.println(pedal1_raw);
         SerialDebug.print("Raw value (2): ");
-        SerialDebug.println(PEDAL2_REG);
+        SerialDebug.println(pedal2_raw);
 
         SerialDebug.print("Computed value (1): ");
         SerialDebug.println(reading_1);
@@ -333,6 +344,9 @@ void loop()
 
         SerialDebug.print("Difference (1-2): ");
         SerialDebug.println(difference);
+
+        SerialDebug.print("Average (1,2): ");
+        SerialDebug.println(average_reading);
         #endif
 
         //test_frame_3.data.bytes[1] = reading & 0xff;
