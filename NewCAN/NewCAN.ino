@@ -2,9 +2,18 @@
 #include "variant.h"
 #include "due_can.h"
 
+/**
+ * Debugging flags
+ */
+#define SerialDebug Serial // Select Serial port for printing out debug messages
+#define DEBUG_PEDAL        // Enable debugging of pedal readings
+
+/**
+ * Constants
+ */
 #define CAN_BAUD_RATE CAN_BPS_500K
-#define NDRIVE_RXID     0x210
-#define NDRIVE_TXID        0x180
+#define NDRIVE_RXID 0x210
+#define NDRIVE_TXID 0x180
 
 #define TEST1_CAN0_TX_PRIO             15
 #define CAN_MSG_DUMMY_DATA             0x11BFFA4E
@@ -13,11 +22,20 @@
 #define MAX_CAN_FRAME_DATA_LEN     8
 
 // ADC 
-#define BIT_CONVERSION_CONSTANT (65536/4095.0)
+// #define BIT_CONVERSION_CONSTANT (65536/4095.0)
+#define BIT_CONVERSION_CONSTANT 1
 
 // Pedal
 #define PEDAL1_REG CHANNEL_7_REG // A0
 #define PEDAL2_REG CHANNEL_6_REG // A1
+
+/**
+ * Calibrated values
+ */
+const int pedal1_min = 200;
+const int pedal1_max = 1000;
+const int pedal2_min = 700;
+const int pedal2_max = 1500;
 
 float CHANNEL_0_REG = 0;
 float CHANNEL_1_REG = 0;
@@ -283,19 +301,28 @@ void loop()
     //CAN.sendFrame(test_frame_2);
     //delayMicroseconds(100);
 
-    while (1) {
-        
+    while (1) {        
         // retrieves pedal input
-        int reading_1 = PEDAL1_REG;
-        int reading_2 = PEDAL2_REG;
+        int reading_1 = constrain(map(PEDAL1_REG, pedal1_min, pedal1_max, 0, 65536), 0, 65536);
+        int reading_2 = constrain(map(PEDAL2_REG, pedal2_min, pedal2_max, 0, 65536), 0, 65536);
         int difference = reading_1 - reading_2;
 
-        Serial.print("Reading 1: ");
-        Serial.println(reading_1);
-        Serial.print("Reading 2: ");
-        Serial.println(reading_2);
-        Serial.print("Difference: ");
-        Serial.println(difference);
+        #ifdef DEBUG_PEDAL
+        SerialDebug.println("Pedal 1:");
+        SerialDebug.print("Raw value: ");
+        SerialDebug.println(PEDAL1_REG);
+        SerialDebug.print("Computed value: ");
+        SerialDebug.println(reading_1);
+
+        SerialDebug.println("Pedal 2:");
+        SerialDebug.print("Raw value: ");
+        SerialDebug.println(PEDAL2_REG);
+        SerialDebug.print("Computed value: ");
+        SerialDebug.println(reading_2);
+
+        SerialDebug.print("Difference: ");
+        SerialDebug.println(difference);
+        #endif
 
         //test_frame_3.data.bytes[1] = reading & 0xff;
         //test_frame_3.data.bytes[2] = (reading >> 8) & 0xff;
