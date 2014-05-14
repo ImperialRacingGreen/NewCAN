@@ -1,4 +1,3 @@
-// Required libraries
 #include "variant.h"
 #include "due_can.h"
 
@@ -6,7 +5,7 @@
  * Debugging flags
  */
 #define SerialDebug Serial // Select Serial port for printing out debug messages
-#define DEBUG_PEDAL        // Enable debugging of pedal readings
+#define DEBUG_PEDAL // Enable debugging of pedal readings
 
 /**
  * Constants
@@ -22,17 +21,21 @@
 #define MAX_CAN_FRAME_DATA_LEN     8
 
 // Pedal channels
-#define PEDAL1_ADC_CHANNEL ADC_CHANNEL_7 // A0
-#define PEDAL2_ADC_CHANNEL ADC_CHANNEL_6 // A1
+#define PEDAL1_ADC_CHANNEL ADC_CHANNEL_7 // this is A0
+#define PEDAL2_ADC_CHANNEL ADC_CHANNEL_6 // this is A1
 
 /**
  * Calibrated values
  */
-const int pedal1_min = 200;
-const int pedal1_max = 1000;
-const int pedal2_min = 700;
-const int pedal2_max = 1500;
+const int pedal1_min = 200;  // pedal1 min value in 12-bit range
+const int pedal1_max = 1000; // pedal1 max value in 12-bit range
+const int pedal2_min = 700;  // pedal2 min value in 12-bit range
+const int pedal2_max = 1500; // pedal2 max value in 12-bit range
 
+// abs(pedal1 - pedal2) in 16-bit range must not go over this
+const int pedal_threshold = 4000;
+
+// Registers to store raw pedal readings during interrupt
 volatile int pedal1_raw = -1;
 volatile int pedal2_raw = -1;
 
@@ -198,7 +201,38 @@ bool has_received_data(uint8_t data_address) {
 */
 
 /**
+ * Emergency functions
+ * -------------------
+ */
+
+/**
+ * Stops the vehicle completely
+ */
+void emergency_stop()
+{
+    // TODO send shutdown commands, functions, etc.
+
+    while (true) {
+        #ifdef SerialDebug
+        SerialDebug.println("ABORT!");
+        #endif
+    }
+}
+
+/**
+ * Emergency stop the vehicle if condition is invalid.
+ * @param condition
+ */
+void assert_or_abort(bool condition)
+{
+    if ( ! condition) {
+        emergency_stop();
+    }
+}
+
+/**
  * Pedal reading functions
+ * -----------------------
  */
 
 /**
@@ -208,10 +242,32 @@ bool has_received_data(uint8_t data_address) {
  * @param  max_value Maximum value
  * @return value     Processed value
  */
-int get_pedal_reading(int raw_value, int min_value, int max_value)
+int get_pedal_reading(const int raw_value, const int min_value, const int max_value)
 {
     // Map to 16-bit range
     return constrain(map(raw_value, min_value, max_value, 0, 65536), 0, 65536);
+}
+
+/**
+ * Returns average of two readings
+ * @param  reading_1
+ * @param  reading_2
+ * @return
+ */
+int get_average_pedal_reading(const int reading_1, const int reading_2)
+{
+    return (reading_1 + reading_2) / 2;
+}
+
+/**
+ * Asserts pedal readings are in threshold
+ * @param  reading_1
+ * @param  reading_2
+ * @param  threshold
+ */
+void assert_pedal_in_threshold(const int reading_1, const int reading_2, const int threshold)
+{
+    assert_or_abort(abs(reading_1 - reading_2) < threshold);
 }
 
 void setup() {
@@ -328,8 +384,8 @@ void loop()
         // retrieves pedal input
         int reading_1 = get_pedal_reading(pedal1_raw, pedal1_min, pedal1_max);
         int reading_2 = get_pedal_reading(pedal2_raw, pedal2_min, pedal2_max);
-        int difference = reading_1 - reading_2;
-        int average_reading = (reading_1 + reading_2) / 2;
+        int average_reading = get_average_pedal_reading(reading_1, reading_2);
+        assert_pedal_in_threshold(reading_1, reading_2, pedal_threshold);
 
         #ifdef DEBUG_PEDAL
         SerialDebug.print("Raw value (1): ");
@@ -343,7 +399,7 @@ void loop()
         SerialDebug.println(reading_2);
 
         SerialDebug.print("Difference (1-2): ");
-        SerialDebug.println(difference);
+        SerialDebug.println(abs(reading_1 - reading_2));
 
         SerialDebug.print("Average (1,2): ");
         SerialDebug.println(average_reading);
@@ -361,10 +417,10 @@ void loop()
         // Serial.println();
 
         // printFrame(test_frame_3);
-        delayMicroseconds(100);
-        CAN.sendFrame(test_frame_3);
-        delayMicroseconds(100);
-        delay(1000);
+        // delayMicroseconds(100);
+        // CAN.sendFrame(test_frame_3);
+        // delayMicroseconds(100);
+        // delay(1000);
 
         if (CAN.rx_avail()) {
             CAN.get_rx_buff(incoming); 
