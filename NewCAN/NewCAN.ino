@@ -21,10 +21,6 @@
 // CAN frame max data length
 #define MAX_CAN_FRAME_DATA_LEN     8
 
-// ADC 
-// #define BIT_CONVERSION_CONSTANT (65536/4095.0)
-#define BIT_CONVERSION_CONSTANT 1
-
 // Pedal
 #define PEDAL1_REG CHANNEL_7_REG // A0
 #define PEDAL2_REG CHANNEL_6_REG // A1
@@ -37,16 +33,16 @@ const int pedal1_max = 1000;
 const int pedal2_min = 700;
 const int pedal2_max = 1500;
 
-float CHANNEL_0_REG = 0;
-float CHANNEL_1_REG = 0;
-float CHANNEL_2_REG = 0;
-float CHANNEL_3_REG = 0;
-float CHANNEL_4_REG = 0;
-float CHANNEL_5_REG = 0;
-float CHANNEL_6_REG = 0;
-float CHANNEL_7_REG = 0;
-float CHANNEL_8_REG = 0;
-float CHANNEL_9_REG = 0;
+volatile int CHANNEL_0_REG = 0;
+volatile int CHANNEL_1_REG = 0;
+volatile int CHANNEL_2_REG = 0;
+volatile int CHANNEL_3_REG = 0;
+volatile int CHANNEL_4_REG = 0;
+volatile int CHANNEL_5_REG = 0;
+volatile int CHANNEL_6_REG = 0;
+volatile int CHANNEL_7_REG = 0;
+volatile int CHANNEL_8_REG = 0;
+volatile int CHANNEL_9_REG = 0;
 
 uint32_t sentFrames, receivedFrames;
 
@@ -94,16 +90,16 @@ void ADC_Handler(void)
     if ((adc_get_status(ADC) & ADC_ISR_EOC7) == ADC_ISR_EOC7)
     {
         //Get digital data value from ADC channels and can be used by application
-        CHANNEL_0_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_0))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_1_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_1))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_2_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_2))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_3_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_3))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_4_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_4))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_5_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_5))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_6_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_6))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_7_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_7))*BIT_CONVERSION_CONSTANT;
-        CHANNEL_8_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_10))*BIT_CONVERSION_CONSTANT; //notice that its channel 10
-        CHANNEL_9_REG = ((float)adc_get_channel_value(ADC, ADC_CHANNEL_11))*BIT_CONVERSION_CONSTANT; //notice that its channel 11
+        CHANNEL_0_REG = adc_get_channel_value(ADC, ADC_CHANNEL_0);
+        CHANNEL_1_REG = adc_get_channel_value(ADC, ADC_CHANNEL_1);
+        CHANNEL_2_REG = adc_get_channel_value(ADC, ADC_CHANNEL_2);
+        CHANNEL_3_REG = adc_get_channel_value(ADC, ADC_CHANNEL_3);
+        CHANNEL_4_REG = adc_get_channel_value(ADC, ADC_CHANNEL_4);
+        CHANNEL_5_REG = adc_get_channel_value(ADC, ADC_CHANNEL_5);
+        CHANNEL_6_REG = adc_get_channel_value(ADC, ADC_CHANNEL_6);
+        CHANNEL_7_REG = adc_get_channel_value(ADC, ADC_CHANNEL_7);
+        CHANNEL_8_REG = adc_get_channel_value(ADC, ADC_CHANNEL_10); //notice that its channel 10
+        CHANNEL_9_REG = adc_get_channel_value(ADC, ADC_CHANNEL_11); //notice that its channel 11
     }
     adc_start(ADC);
 }
